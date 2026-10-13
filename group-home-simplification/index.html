@@ -31,9 +31,10 @@
   .phone.tall:focus { outline:none; }
   .trio .col { transition:opacity 300ms ease; }
   .trio.has-active .col:not(.active) { opacity:.35; }
-  .stage.trio { gap:40px; }
-  .col .cap { margin-top:24px; font-size:16px; font-weight:600; text-align:center; }
-  .col .sub { margin-top:4px; font-size:13px; color:var(--muted); text-align:center; }
+  .stage.trio { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; width:min(calc(100vw - 48px), 1080px); }
+  .trio .col { width:auto; }
+  .col .cap { margin-top:24px; text-wrap:balance; font-size:16px; font-weight:600; text-align:center; }
+  .col .sub { margin-top:4px; text-wrap:balance; font-size:13px; color:var(--muted); text-align:center; }
   .view { display:flex; flex-direction:column; align-items:center; gap:20px; }
   .view[hidden] { display:none; }
   .stage { display:flex; gap:56px; align-items:flex-start; justify-content:center; }
