@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Group Home Simplification</title>
+<style>
+  :root { --bg:#fff; --ink:#1c1e21; --muted:#65676b; --h:min(62vh,800px,calc((100vw - 160px) / 0.9)); --w:calc(var(--h)*0.45); }
+  * { box-sizing:border-box; margin:0; }
+  html,body { height:100%; background:var(--bg); }
+  body { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+         padding:112px 16px 56px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); }
+  .toggle { position:fixed; top:60px; left:50%; transform:translateX(-50%); display:flex; gap:2px; padding:3px;
+            background:#eceef1; border-radius:999px; }
+  .toggle button { font:inherit; font-size:13px; font-weight:500; color:var(--muted); background:transparent; border:0;
+                   padding:6px 16px; border-radius:999px; cursor:pointer; transition:background 200ms, color 200ms, box-shadow 200ms; }
+  .toggle button[aria-selected="true"] { background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.15); }
+  .toggle button:focus-visible { outline:2px solid #8a5cf6; outline-offset:2px; }
+  /* Featured Unit demo: the recorded sim (975x1848, 2x with 56pt padding), cropped to the 375x812 screen */
+  .phone.tall { --pw:calc(min(var(--h), calc((100vw - 232px) / 3 / 0.4618))*0.4618); height:calc(var(--pw) / 0.4618); width:var(--pw); border-radius:calc(var(--pw)*0.064); }
+  .phone.tall::before { border-radius:calc(var(--pw)*0.064 + 4px); }
+  .phone video { position:absolute; width:129.87%; height:113.79%; left:-14.93%; top:-6.9%; max-width:none; display:block; }
+  .crop { position:absolute; inset:0; overflow:hidden; border-radius:inherit; }
+  .controls { display:flex; gap:8px; }
+  .controls button { font:inherit; font-size:13px; font-weight:500; color:var(--ink); background:#eceef1; border:0; padding:8px 18px;
+                     border-radius:999px; cursor:pointer; transition:background 200ms; }
+  .controls button:hover { background:#e1e4e8; }
+  .controls button:disabled { color:#a4a7ab; cursor:default; background:#f3f4f6; }
+  .controls button:focus-visible { outline:2px solid #8a5cf6; outline-offset:2px; }
+  .phone.tall { cursor:pointer; }
+  .phone.tall:focus { outline:none; }
+  .trio .col { transition:opacity 300ms ease; }
+  .trio.has-active .col:not(.active) { opacity:.35; }
+  .stage.trio { gap:40px; }
+  .col .cap { margin-top:24px; font-size:16px; font-weight:600; text-align:center; }
+  .col .sub { margin-top:4px; font-size:13px; color:var(--muted); text-align:center; }
+  .view { display:flex; flex-direction:column; align-items:center; gap:20px; }
+  .view[hidden] { display:none; }
+  .stage { display:flex; gap:56px; align-items:flex-start; justify-content:center; }
+  .col { display:flex; flex-direction:column; align-items:center; width:var(--w); }
+  .phone { position:relative; width:var(--w); height:var(--h); border-radius:8px; isolation:isolate;
+           background:#fff; flex:none; }
+  /* device rim: angled light-to-dark grey gradient, with the ambient shadow */
+  .phone::before { content:""; position:absolute; inset:-4px; border-radius:12px; z-index:-1;
+           background:linear-gradient(135deg,#b4b7bd 0%,#7c8087 28%,#43464c 58%,#6a6d74 82%,#9a9da3 100%);
+           box-shadow:0 0 30px 4px rgba(0,0,0,.18); }
+  .phone img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; border-radius:8px;
+               opacity:0; transition:opacity var(--fade,500ms) ease; }
+  .phone img.on { opacity:1; }
+  .phone.empty::before { display:none; }
+  .phone.empty { border:1.5px dashed #d0d3d8; display:flex; align-items:center; justify-content:center;
+                 color:var(--muted); font-size:13px; }
+  .label { margin-top:0; font-size:18px; font-weight:600; min-height:24px; text-align:center; transition:opacity 250ms ease; }
+  .label.out { opacity:0; }
+  .note { margin-top:-12px; min-height:18px; font-size:14px; color:var(--muted); text-align:center; transition:opacity 250ms ease; }
+  .note.out { opacity:0; }
+  .tag { margin-top:20px; font-size:14px; color:var(--muted); }
+  .eyebrow { position:fixed; top:32px; left:0; right:0; padding:0 16px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); text-align:center; }
+  .dots { display:flex; gap:6px; justify-content:center; }
+  .dots i { width:6px; height:6px; border-radius:50%; background:#d0d3d8; transition:background 250ms; }
+  .dots i.on { background:var(--ink); }
+  @media (prefers-reduced-motion:reduce){ .phone img,.label,.note{ transition:none; } }
+</style>
+</head>
+<body>
+  <div class="eyebrow">Group Home Simplification</div>
+  <div class="toggle" role="tablist" aria-label="Moment">
+    <button role="tab" id="tab-top" aria-selected="true" data-view="top">Top of Home</button>
+    <button role="tab" id="tab-featured" aria-selected="false" data-view="featured">Featured Unit</button>
+  </div>
+
+  <section class="view" id="view-top">
+    <div class="stage" id="stage"></div>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+    <div class="label" id="label"></div>
+    <div class="note" id="note"></div>
+  </section>
+
+  <section class="view" id="view-featured" hidden>
+    <div class="stage trio">
+      <div class="col"><div class="phone tall" role="button" tabindex="0" aria-label="Play recording"><div class="crop">
+        <video src="media/featured-new-expanded.mp4" poster="media/featured-new-expanded-start.png" muted playsinline preload="auto"></video>
+      </div></div>
+      <div class="cap">Surface what’s new</div><div class="sub">Featured open with new content</div></div>
+      <div class="col"><div class="phone tall" role="button" tabindex="0" aria-label="Play recording"><div class="crop">
+        <video src="media/featured-caught-up-collapsed.mp4" poster="media/featured-caught-up-collapsed-start.png" muted playsinline preload="auto"></video>
+      </div></div>
+      <div class="cap">Collapse once caught up</div><div class="sub">Featured collapsed, nothing new</div></div>
+      <div class="col"><div class="phone tall" role="button" tabindex="0" aria-label="Play recording"><div class="crop">
+        <video src="media/featured-manual-caret.mp4" poster="media/featured-manual-caret-start.png" muted playsinline preload="auto"></video>
+      </div></div>
+      <div class="cap">Manual control</div><div class="sub">Tap the caret to collapse or expand</div></div>
+    </div>
+    <div class="controls">
+      <button id="refresh" type="button">Refresh</button>
+    </div>
+  </section>
+
+<script>
+  // Edit these lists to add, remove or reorder screens. Both columns step together by index.
+  const COLUMNS = [
+    { tag: "Public · Non-Member", screens: [
+      { src:"screens/before.png", label:"Before" },
+      { src:"screens/v1.png",     label:"Variant 1 · Consistent header" },
+      { src:"screens/v2.png",     label:"Variant 2 · Dynamic header height" },
+      { src:"screens/v3.png",     label:"Variant 3 · Dynamic header (non-gradient)" },
+      { src:"screens/v4.png",     label:"Variant 4 · Consistent channel header" },
+    ]},
+    { tag: "Public · Member", screens: [
+      { src:"screens/m-before.png", label:"Before" },
+      { src:"screens/m-v1.png",     label:"Variant 1 · Consistent header" },
+      { src:"screens/m-v2.png",     label:"Variant 2 · Dynamic header height" },
+      { src:"screens/m-v3.png",     label:"Variant 3 · Dynamic header (non-gradient)" },
+      { src:"screens/m-v4.png",     label:"Variant 4 · Consistent channel header" },
+    ]},
+  ];
+  const FADE = 500;                          // ms crossfade
+  const COUNT = Math.max(...COLUMNS.map(c => c.screens.length));
+  const stage = document.getElementById("stage");
+  const dots  = document.getElementById("dots");
+  const label = document.getElementById("label");
+  const note  = document.getElementById("note");
+  const cols = COLUMNS.map(c => {
+    const col = document.createElement("div"); col.className = "col";
+    const phone = document.createElement("div"); phone.className = "phone";
+    phone.style.setProperty("--fade", FADE + "ms");
+    const tag = document.createElement("div"); tag.className = "tag"; tag.textContent = c.tag;
+    col.append(phone, tag); stage.appendChild(col);
+    const imgs = c.screens.map(s => { const i = new Image(); i.src = s.src; i.alt = ""; phone.appendChild(i); return i; });
+    if (!imgs.length) { phone.classList.add("empty"); phone.textContent = "Screens pending"; }
+    return { c, imgs };
+  });
+  for (let i = 0; i < COUNT; i++) dots.appendChild(document.createElement("i"));
+
+  let cur = -1;
+  function show(n) {
+    if (cur >= 0) dots.children[cur].classList.remove("on");
+    dots.children[n].classList.add("on");
+    cols.forEach(({ imgs }) => {
+      if (!imgs.length) return;
+      if (cur >= 0) imgs[cur % imgs.length].classList.remove("on");
+      imgs[n % imgs.length].classList.add("on");
+    });
+    const lead = COLUMNS[0].screens;            // shared step label comes from the first column
+    label.classList.add("out"); note.classList.add("out");
+    setTimeout(() => {
+      const st = lead[n % lead.length];
+      label.textContent = st.label; note.textContent = st.note || "";
+      label.classList.remove("out"); note.classList.remove("out");
+    }, cur < 0 ? 0 : 200);
+    cur = n;
+  }
+  Promise.all(cols.flatMap(x => x.imgs).map(i => i.decode().catch(() => {}))).then(() => show(0));
+
+  // Toggle between Moment 1 (Top of Home) and Moment 2 (Featured Unit)
+  let view = "top";
+  document.querySelectorAll(".toggle button").forEach(b => b.addEventListener("click", () => {
+    view = b.dataset.view;
+    document.querySelectorAll(".toggle button").forEach(x => x.setAttribute("aria-selected", x === b));
+    document.getElementById("view-top").hidden = view !== "top";
+    document.getElementById("view-featured").hidden = view !== "featured";
+    b.blur();
+  }));
+
+  // Featured Unit: three recordings. Click a device (or use ← / →) to play it; Refresh resets all three.
+  const devices = [...document.querySelectorAll("#view-featured .phone.tall")];
+  const clips = devices.map(d => d.querySelector("video"));
+  const refreshBtn = document.getElementById("refresh");
+  const stageEl = document.querySelector("#view-featured .stage");
+  let active = -1;
+  function select(i) {
+    active = (i + devices.length) % devices.length;
+    devices.forEach((d, k) => d.parentElement.classList.toggle("active", k === active));
+    stageEl.classList.add("has-active");
+  }
+  function playClip(i) {
+    select(i);
+    const v = clips[active];
+    v.pause(); v.currentTime = 0; v.play();
+  }
+  devices.forEach((d, i) => {
+    d.addEventListener("click", () => playClip(i));
+    d.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); playClip(i); } });
+  });
+  refreshBtn.addEventListener("click", () => {
+    clips.forEach(v => { v.pause(); v.load(); });     // back to the first frame (poster)
+    active = -1; devices.forEach(d => d.parentElement.classList.remove("active")); stageEl.classList.remove("has-active");
+    refreshBtn.blur();
+  });
+
+  // → or Space: next · ←: previous (wraps). Top of Home steps both devices; in Featured Unit they play one recording at a time.
+  const step = d => show((cur + d + COUNT) % COUNT);
+  addEventListener("keydown", e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (view === "featured") {
+      if (e.repeat) return;
+      if (e.key === "ArrowRight") { e.preventDefault(); playClip(active + 1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); playClip(active < 0 ? devices.length - 1 : active - 1); }
+      else if (e.key === " ") { e.preventDefault(); playClip(active < 0 ? 0 : active); }
+      return;
+    }
+    if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); if (!e.repeat) step(1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); if (!e.repeat) step(-1); }
+  });
+</script>
+</body>
+</html>
