@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Group Home Simplification</title>
 <style>
-  :root { --bg:#fff; --ink:#1c1e21; --muted:#65676b; --h:min(62vh,800px,calc((100vw - 160px) / 0.9)); --w:calc(var(--h)*0.45); }
+  :root { --bg:#fff; --ink:#1c1e21; --muted:#65676b; --h:min(62vh,800px,calc(100vh - 340px),calc((100vw - 160px) / 0.9)); --w:calc(var(--h)*0.45); }
   * { box-sizing:border-box; margin:0; }
   html,body { height:100%; background:var(--bg); }
   body { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
-         padding:136px 16px 48px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); }
-  .toggle { position:fixed; top:76px; left:50%; transform:translateX(-50%); display:flex; gap:2px; padding:3px;
+         padding:176px 16px 40px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); }
+  .toggle { position:fixed; top:104px; left:50%; transform:translateX(-50%); display:flex; gap:2px; padding:3px;
             background:#eceef1; border-radius:999px; }
   .toggle button { font:inherit; font-size:13px; font-weight:500; color:var(--muted); background:transparent; border:0;
                    padding:6px 16px; border-radius:999px; cursor:pointer; transition:background 200ms, color 200ms, box-shadow 200ms; }
