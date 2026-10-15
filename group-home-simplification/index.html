@@ -17,8 +17,9 @@
   .toggle button[aria-selected="true"] { background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.15); }
   .toggle button:focus-visible { outline:2px solid #8a5cf6; outline-offset:2px; }
   /* Featured Unit demo: the recorded sim (975x1848, 2x with 56pt padding), cropped to the 375x812 screen */
-  .phone.tall { --pw:calc(min(var(--h), calc((100vw - 232px) / 3 / 0.4618))*0.4618); height:calc(var(--pw) / 0.4618); width:var(--pw); border-radius:calc(var(--pw)*0.064); }
-  .phone.tall::before { border-radius:calc(var(--pw)*0.064 + 4px); }
+  /* Top of Home is Android: sharper, fixed 8px screen (12px outer with the rim). Featured Unit (iOS) is 13% of width. */
+  #view-top .phone { --r:8px; }
+  .phone.tall { --pw:calc(min(var(--h), calc((100vw - 232px) / 3 / 0.4618))*0.4618); height:calc(var(--pw) / 0.4618); width:var(--pw); }
   .phone video { position:absolute; width:129.87%; height:113.79%; left:-14.93%; top:-6.9%; max-width:none; display:block; }
   .crop { position:absolute; inset:0; overflow:hidden; border-radius:inherit; }
   .controls { display:flex; gap:8px; }
@@ -39,13 +40,13 @@
   .view[hidden] { display:none; }
   .stage { display:flex; gap:56px; align-items:flex-start; justify-content:center; }
   .col { display:flex; flex-direction:column; align-items:center; width:var(--w); }
-  .phone { position:relative; width:var(--w); height:var(--h); border-radius:8px; isolation:isolate;
+  .phone { position:relative; width:var(--w); height:var(--h); --r:calc(var(--pw, var(--w)) * 0.13); border-radius:var(--r); isolation:isolate;
            background:#fff; flex:none; }
   /* device rim: angled light-to-dark grey gradient, with the ambient shadow */
-  .phone::before { content:""; position:absolute; inset:-4px; border-radius:12px; z-index:-1;
+  .phone::before { content:""; position:absolute; inset:-4px; border-radius:calc(var(--r) + 4px); z-index:-1;
            background:linear-gradient(135deg,#b4b7bd 0%,#7c8087 28%,#43464c 58%,#6a6d74 82%,#9a9da3 100%);
            box-shadow:0 0 30px 4px rgba(0,0,0,.18); }
-  .phone img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; border-radius:8px;
+  .phone img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; border-radius:var(--r);
                opacity:0; transition:opacity var(--fade,500ms) ease; }
   .phone img.on { opacity:1; }
   .phone.empty::before { display:none; }
