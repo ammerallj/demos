@@ -20,7 +20,7 @@
   /* Top of Home is Android: sharper, fixed 8px screen (12px outer with the rim). Featured Unit (iOS) is 13% of width. */
   #view-top .phone { --r:8px; }
   .phone.tall { --pw:calc(min(var(--h), calc((100vw - 232px) / 3 / 0.4618))*0.4618); height:calc(var(--pw) / 0.4618); width:var(--pw); }
-  .phone video { position:absolute; width:calc(129.87% + 4px); height:calc(113.79% + 4px); left:calc(-14.93% - 2px); top:calc(-6.9% - 2px); max-width:none; display:block; }  /* 2px tighter on every side so the recording's white canvas edge never shows */
+  .phone video { position:absolute; width:calc(129.87% + 4px); height:calc(113.79% + 2px); left:calc(-14.93% - 2px); top:calc(-6.9% - 2px); max-width:none; display:block; }  /* 2px tighter on the top and sides so the recording's white canvas edge never shows; the bottom keeps its full gap above the home bar */
   .crop { position:absolute; inset:0; overflow:hidden; border-radius:inherit; }
   .controls { display:flex; gap:8px; }
   .controls button { font:inherit; font-size:13px; font-weight:500; color:var(--ink); background:#eceef1; border:0; padding:8px 18px;
@@ -43,17 +43,25 @@
   .phone { position:relative; width:var(--w); height:var(--h); --r:calc(var(--pw, var(--w)) * 0.13); border-radius:var(--r); isolation:isolate;
            background:#fff; flex:none; }
   /* device frame: a 3px black bezel inside, a 2px metal rim outside; both sit outside the screen */
+  :root { --rim-bg:linear-gradient(135deg,#b4b7bd 0%,#7c8087 28%,#43464c 58%,#6a6d74 82%,#9a9da3 100%); --bezel-bg:#0a0a0b; --glow-o:.6; --rim-filter:none; --drop:24px 28px 40px -6px rgba(0,0,0,.30), 8px 10px 14px -2px rgba(0,0,0,.16); --rim-edge:0 0 0 0 transparent; }
+  /* silver frame (add ?frame=silver, or press S): a thin 2px black border inside a 2px white-silver band (both outside the screen), with a stronger glow */
+  body[data-frame="silver"] { --rim-bg:linear-gradient(135deg,#ffffff 0%,#d4d7dc 30%,#9da1a8 58%,#cfd2d7 82%,#f5f6f8 100%); --bezel-bg:#0a0a0b; --glow-o:.8; }
+  body[data-frame="silver"] .phone { --bz:2px; --rm:2px; }
+  /* glass frame (?frame=glass, or press G): a transparent frosted-glass band that blurs the glow behind it, around a thin black border */
+  body[data-frame="glass"] { --rim-bg:rgba(255,255,255,.22); --rim-filter:blur(14px) saturate(1.7); --glow-o:.8;
+    --rim-edge:inset 0 0 0 1px rgba(255,255,255,.6), inset 0 0 10px rgba(255,255,255,.35); }
+  /* glass uses the same thickness as the metal frame: 3px black border + 2px band */
   .phone { --bz:3px; --rm:2px; }
   .phone::before { content:""; position:absolute; inset:calc(-1 * (var(--bz) + var(--rm))); border-radius:calc(var(--r) + var(--bz) + var(--rm)); z-index:-2;
-           background:linear-gradient(135deg,#b4b7bd 0%,#7c8087 28%,#43464c 58%,#6a6d74 82%,#9a9da3 100%);
-           box-shadow:0 0 30px 4px rgba(0,0,0,.18); }
+           background:var(--rim-bg); -webkit-backdrop-filter:var(--rim-filter); backdrop-filter:var(--rim-filter);
+           box-shadow:var(--drop), var(--rim-edge); }  /* light from the top left: a straight offset shadow falling to the bottom right, above the glow and below the frame, identical for every finish */
   .phone::after { content:""; position:absolute; inset:calc(-1 * var(--bz)); border-radius:calc(var(--r) + var(--bz)); z-index:-1;
-           background:#0a0a0b; }
+           background:var(--bezel-bg); }
   /* ambient glow: a heavily blurred still of the screen behind the device */
-  .glow { position:absolute; inset:0; z-index:-3; border-radius:var(--r); filter:blur(34px) saturate(1.5); opacity:.6; transform:scale(1.06); pointer-events:none; }
+  .glow { position:absolute; inset:0; z-index:-3; border-radius:var(--r); filter:blur(34px) saturate(1.5); opacity:var(--glow-o); transform:scale(1.06); pointer-events:none; }
   .glow .crop { border-radius:inherit; }
   .glow img.poster { opacity:1; transition:none; right:auto; bottom:auto; max-width:none; border-radius:0; object-fit:fill;
-                     width:calc(129.87% + 4px); height:calc(113.79% + 4px); left:calc(-14.93% - 2px); top:calc(-6.9% - 2px); }
+                     width:calc(129.87% + 4px); height:calc(113.79% + 2px); left:calc(-14.93% - 2px); top:calc(-6.9% - 2px); }
   .phone img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; border-radius:var(--r);
                opacity:0; transition:opacity var(--fade,500ms) ease; }
   .phone img.on { opacity:1; }
@@ -163,6 +171,16 @@
     cur = n;
   }
   Promise.all(cols.flatMap(x => [...x.imgs, ...x.gimgs]).map(i => i.decode().catch(() => {}))).then(() => show(0));
+
+  // Frame finish: dark (default), silver or glass. ?frame=silver|glass, or press S / G to toggle.
+  const setFrame = f => { if (f === "silver" || f === "glass") document.body.dataset.frame = f; else delete document.body.dataset.frame; };
+  setFrame(new URLSearchParams(location.search).get("frame"));
+  addEventListener("keydown", e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key.toLowerCase(), cur = document.body.dataset.frame;
+    if (k === "s") setFrame(cur === "silver" ? "dark" : "silver");
+    else if (k === "g") setFrame(cur === "glass" ? "dark" : "glass");
+  });
 
   // Toggle between Moment 1 (Top of Home) and Moment 2 (Featured Unit)
   let view = "top";
