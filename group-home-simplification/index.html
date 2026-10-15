@@ -20,7 +20,7 @@
   /* Top of Home is Android: sharper, fixed 8px screen (12px outer with the rim). Featured Unit (iOS) is 13% of width. */
   #view-top .phone { --r:8px; }
   .phone.tall { --pw:calc(min(var(--h), calc((100vw - 232px) / 3 / 0.4618))*0.4618); height:calc(var(--pw) / 0.4618); width:var(--pw); }
-  .phone video { position:absolute; width:129.87%; height:113.79%; left:-14.93%; top:-6.9%; max-width:none; display:block; }
+  .phone video { position:absolute; width:calc(129.87% + 4px); height:calc(113.79% + 4px); left:calc(-14.93% - 2px); top:calc(-6.9% - 2px); max-width:none; display:block; }  /* 2px tighter on every side so the recording's white canvas edge never shows */
   .crop { position:absolute; inset:0; overflow:hidden; border-radius:inherit; }
   .controls { display:flex; gap:8px; }
   .controls button { font:inherit; font-size:13px; font-weight:500; color:var(--ink); background:#eceef1; border:0; padding:8px 18px;
@@ -42,14 +42,22 @@
   .col { display:flex; flex-direction:column; align-items:center; width:var(--w); }
   .phone { position:relative; width:var(--w); height:var(--h); --r:calc(var(--pw, var(--w)) * 0.13); border-radius:var(--r); isolation:isolate;
            background:#fff; flex:none; }
-  /* device rim: angled light-to-dark grey gradient, with the ambient shadow */
-  .phone::before { content:""; position:absolute; inset:-4px; border-radius:calc(var(--r) + 4px); z-index:-1;
+  /* device frame: a 3px black bezel inside, a 2px metal rim outside; both sit outside the screen */
+  .phone { --bz:3px; --rm:2px; }
+  .phone::before { content:""; position:absolute; inset:calc(-1 * (var(--bz) + var(--rm))); border-radius:calc(var(--r) + var(--bz) + var(--rm)); z-index:-2;
            background:linear-gradient(135deg,#b4b7bd 0%,#7c8087 28%,#43464c 58%,#6a6d74 82%,#9a9da3 100%);
            box-shadow:0 0 30px 4px rgba(0,0,0,.18); }
+  .phone::after { content:""; position:absolute; inset:calc(-1 * var(--bz)); border-radius:calc(var(--r) + var(--bz)); z-index:-1;
+           background:#0a0a0b; }
+  /* ambient glow: a heavily blurred still of the screen behind the device */
+  .glow { position:absolute; inset:0; z-index:-3; border-radius:var(--r); filter:blur(34px) saturate(1.5); opacity:.6; transform:scale(1.06); pointer-events:none; }
+  .glow .crop { border-radius:inherit; }
+  .glow img.poster { opacity:1; transition:none; right:auto; bottom:auto; max-width:none; border-radius:0; object-fit:fill;
+                     width:calc(129.87% + 4px); height:calc(113.79% + 4px); left:calc(-14.93% - 2px); top:calc(-6.9% - 2px); }
   .phone img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; border-radius:var(--r);
                opacity:0; transition:opacity var(--fade,500ms) ease; }
   .phone img.on { opacity:1; }
-  .phone.empty::before { display:none; }
+  .phone.empty::before, .phone.empty::after { display:none; }
   .phone.empty { border:1.5px dashed #d0d3d8; display:flex; align-items:center; justify-content:center;
                  color:var(--muted); font-size:13px; }
   .label { margin-top:0; font-size:18px; font-weight:600; min-height:24px; text-align:center; transition:opacity 250ms ease; }
@@ -80,15 +88,15 @@
 
   <section class="view" id="view-featured" hidden>
     <div class="stage trio">
-      <div class="col"><div class="phone tall" role="button" tabindex="0" aria-label="Play recording"><div class="crop">
+      <div class="col"><div class="phone tall" role="button" tabindex="0" aria-label="Play recording"><div class="glow"><div class="crop"><img class="poster" src="media/featured-new-expanded-start.png" alt=""></div></div><div class="crop">
         <video src="media/featured-new-expanded.mp4" poster="media/featured-new-expanded-start.png" muted playsinline preload="auto"></video>
       </div></div>
       <div class="cap">Surface what’s new</div><div class="sub">Featured open with new content</div></div>
-      <div class="col"><div class="phone tall" role="button" tabindex="0" aria-label="Play recording"><div class="crop">
+      <div class="col"><div class="phone tall" role="button" tabindex="0" aria-label="Play recording"><div class="glow"><div class="crop"><img class="poster" src="media/featured-caught-up-collapsed-start.png" alt=""></div></div><div class="crop">
         <video src="media/featured-caught-up-collapsed.mp4" poster="media/featured-caught-up-collapsed-start.png" muted playsinline preload="auto"></video>
       </div></div>
       <div class="cap">Collapse once caught up</div><div class="sub">Featured collapsed, nothing new</div></div>
-      <div class="col"><div class="phone tall" role="button" tabindex="0" aria-label="Play recording"><div class="crop">
+      <div class="col"><div class="phone tall" role="button" tabindex="0" aria-label="Play recording"><div class="glow"><div class="crop"><img class="poster" src="media/featured-manual-caret-start.png" alt=""></div></div><div class="crop">
         <video src="media/featured-manual-caret.mp4" poster="media/featured-manual-caret-start.png" muted playsinline preload="auto"></video>
       </div></div>
       <div class="cap">Manual control</div><div class="sub">Tap the caret to collapse or expand</div></div>
@@ -128,9 +136,11 @@
     phone.style.setProperty("--fade", FADE + "ms");
     const tag = document.createElement("div"); tag.className = "tag"; tag.textContent = c.tag;
     col.append(phone, tag); stage.appendChild(col);
+    const glow = document.createElement("div"); glow.className = "glow"; phone.appendChild(glow);
+    const gimgs = c.screens.map(s => { const i = new Image(); i.src = s.src; i.alt = ""; glow.appendChild(i); return i; });
     const imgs = c.screens.map(s => { const i = new Image(); i.src = s.src; i.alt = ""; phone.appendChild(i); return i; });
-    if (!imgs.length) { phone.classList.add("empty"); phone.textContent = "Screens pending"; }
-    return { c, imgs };
+    if (!imgs.length) { phone.classList.add("empty"); phone.textContent = "Screens pending"; glow.remove(); }
+    return { c, imgs, gimgs };
   });
   for (let i = 0; i < COUNT; i++) dots.appendChild(document.createElement("i"));
 
@@ -138,10 +148,10 @@
   function show(n) {
     if (cur >= 0) dots.children[cur].classList.remove("on");
     dots.children[n].classList.add("on");
-    cols.forEach(({ imgs }) => {
+    cols.forEach(({ imgs, gimgs }) => {
       if (!imgs.length) return;
-      if (cur >= 0) imgs[cur % imgs.length].classList.remove("on");
-      imgs[n % imgs.length].classList.add("on");
+      if (cur >= 0) { imgs[cur % imgs.length].classList.remove("on"); gimgs[cur % imgs.length].classList.remove("on"); }
+      imgs[n % imgs.length].classList.add("on"); gimgs[n % imgs.length].classList.add("on");
     });
     const lead = COLUMNS[0].screens;            // shared step label comes from the first column
     label.classList.add("out"); note.classList.add("out");
@@ -152,7 +162,7 @@
     }, cur < 0 ? 0 : 200);
     cur = n;
   }
-  Promise.all(cols.flatMap(x => x.imgs).map(i => i.decode().catch(() => {}))).then(() => show(0));
+  Promise.all(cols.flatMap(x => [...x.imgs, ...x.gimgs]).map(i => i.decode().catch(() => {}))).then(() => show(0));
 
   // Toggle between Moment 1 (Top of Home) and Moment 2 (Featured Unit)
   let view = "top";
