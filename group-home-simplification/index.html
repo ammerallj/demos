@@ -4,13 +4,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Group Home Simplification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
-  :root { --bg:#fff; --ink:#1c1e21; --muted:#65676b; --h:min(62vh,800px,calc(100vh - 340px),calc((100vw - 160px) / 0.9)); --w:calc(var(--h)*0.45); }
+  :root { --bg:#fff; --ink:#1c1e21; --muted:#65676b;
+    --pad:48px; --push:0px;   /* how far the right-hand lockup moves right */ --copyw:clamp(240px,27vw,400px); --gapx:64px;
+    --rw:calc(min(100vw, 1440px) - 2 * var(--pad) - var(--copyw) - var(--gapx));   /* the layout is capped at 1440px wide */          /* width of the right column (devices) */
+    --h:min(62vh,800px,calc(100vh - 380px),calc((var(--rw) - 48px) / 0.954)); --w:calc(var(--h)*0.45); --serif:"New York","Iowan Old Style",ui-serif,Georgia,"Times New Roman",serif; --sans:"Inter","Helvetica Neue",Helvetica,Arial,sans-serif; }
   * { box-sizing:border-box; margin:0; }
-  html,body { height:100%; background:var(--bg); }
-  body { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
-         padding:176px 16px 40px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); }
-  .toggle { position:fixed; top:104px; left:50%; transform:translateX(-50%); display:flex; gap:2px; padding:3px;
+  html,body { min-height:100%; background:var(--bg); }
+  html { overflow-x:hidden; }   /* the shifted lockup's box may pass the edge; its content stays 24px clear, so never scroll sideways */
+  body { display:flex; align-items:flex-start; justify-content:center; min-height:100vh;
+         padding:var(--pad); font-family:var(--sans); color:var(--ink); }
+  /* two columns: a text lockup on the left; the switcher, the devices and their adaptive text on the right */
+  .layout { display:grid; grid-template-columns:var(--copyw) minmax(0,1fr); column-gap:var(--gapx); align-items:stretch; width:100%; max-width:1440px; min-height:calc(100vh - 2 * var(--pad)); }
+  /* editorial lockup: a serif headline and intro paired with a small sans for the label, bullets and result; hairline rules between the parts */
+  .copy { --rule:1px solid #e3e5e8; display:flex; flex-direction:column; justify-content:space-between; gap:56px; }  /* headline block at the top, bullets anchored below, a gap between */
+  .copy .eyebrow { font-size:11px; font-weight:400; line-height:1; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:22px; }
+  .copy h1 { font-family:var(--serif); font-size:clamp(32px,3.7vw,56px); line-height:1.02; letter-spacing:-.025em; font-weight:500; text-wrap:balance; margin-bottom:28px; }
+  .copy h1 em { font-style:italic; font-weight:400; }
+  .copy .lede { font-family:var(--serif); font-size:clamp(17px,1.35vw,20px); line-height:1.4; color:var(--ink); margin-bottom:20px; }
+  .copy ul { list-style:none; padding:0; display:flex; flex-direction:column; gap:12px; font-size:14.5px; line-height:1.45; color:#55585d; margin-bottom:24px; }
+  .copy li { padding-left:16px; position:relative; }
+  .copy li::before { content:"•"; position:absolute; left:0; color:var(--muted); }
+  .copy .result { font-size:15px; line-height:1.4; font-weight:400; color:var(--ink); padding-top:18px; border-top:var(--rule); }
+  .right { display:flex; flex-direction:column; align-items:center; gap:0; min-width:0; --below:150px; transform:translateX(var(--push)); }   /* --below: room for the labels under the devices */
+  @media (max-width:960px) {
+    :root { --copyw:100%; --gapx:0px; --rw:calc(100vw - 2 * var(--pad)); }
+    .layout { grid-template-columns:1fr; align-items:start; row-gap:80px; min-height:0; }   /* room below the bullets and result before the devices */
+  }
+  .toggle { display:flex; gap:2px; padding:3px;
             background:#eceef1; border-radius:999px; }
   .toggle button { font:inherit; font-size:13px; font-weight:500; color:var(--muted); background:transparent; border:0;
                    padding:6px 16px; border-radius:999px; cursor:pointer; transition:background 200ms, color 200ms, box-shadow 200ms; }
@@ -19,7 +43,7 @@
   /* Featured Unit demo: the recorded sim (975x1848, 2x with 56pt padding), cropped to the 375x812 screen */
   /* Top of Home is Android: sharper, fixed 8px screen (12px outer with the rim). Featured Unit (iOS) is 13% of width. */
   #view-top .phone { --r:8px; }
-  .phone.tall { --pw:calc(min(var(--h), calc((100vw - 232px) / 3 / 0.4618))*0.4618); height:calc(var(--pw) / 0.4618); width:var(--pw); }
+  .phone.tall { height:calc(var(--pw) / 0.4618); width:var(--pw); }   /* --pw comes from the trio (below) */
   .phone video { position:absolute; width:calc(129.87% + 4px); height:calc(113.79% + 2px); left:calc(-14.93% - 2px); top:calc(-6.9% - 2px); max-width:none; display:block; }  /* 2px tighter on the top and sides so the recording's white canvas edge never shows; the bottom keeps its full gap above the home bar */
   .crop { position:absolute; inset:0; overflow:hidden; border-radius:inherit; }
   .controls { display:flex; gap:8px; }
@@ -32,18 +56,27 @@
   .phone.tall:focus { outline:none; }
   .trio .col { transition:opacity 300ms ease; }
   .trio.has-active .col:not(.active) { opacity:.35; }
-  .stage.trio { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; width:min(calc(100vw - 48px), 1080px); }
+  .stage.trio { --pw:calc(min(var(--h), (var(--rw) - 64px) / 3.24 / 0.4618) * 0.4618); display:grid; grid-template-columns:repeat(3,var(--pw)); justify-content:center; gap:calc(24px + var(--pw) * 0.12); }   /* columns exactly as wide as the devices; captions wrap to fit */
   .trio .col { width:auto; }
-  .col .cap { margin-top:24px; text-wrap:balance; font-size:16px; font-weight:600; text-align:center; }
+  .col .cap { margin-top:36px; text-wrap:balance; font-family:var(--serif); font-size:20px; font-weight:500; letter-spacing:-.015em; text-align:center; }
+  .col .cap, .col .sub { white-space:nowrap; }   /* one line each: text may run a little past the device edge */
   .col .sub { margin-top:4px; text-wrap:balance; font-size:13px; color:var(--muted); text-align:center; }
   .view { display:flex; flex-direction:column; align-items:center; gap:20px; }
-  .view[hidden] { display:none; }
-  .stage { display:flex; gap:56px; align-items:flex-start; justify-content:center; }
+  /* both views share one grid cell, so the box is as tall as the taller view and each starts at the same Y: the devices line up when you switch */
+  .views { flex:1; align-self:stretch; position:relative; }
+  /* the devices and their labels are centred together, as one group, between the switcher and the bottom of the page (a shared group height keeps
+     both views' devices at the same Y); never closer than 72px to the switcher, so it stays clear of the glow */
+  .view { --dh:var(--h); }                                                                   /* the height of this view's devices */
+  #view-featured { --dh:min(var(--h), calc((var(--rw) - 64px) / 3.24 / 0.4618)); }              /* the Featured trio can be shorter than the pair */
+  .views > .view { position:absolute; left:0; right:0;
+    top:max(72px, min(calc(50% - (var(--dh) + var(--below)) / 2 + var(--pad) / 2), calc(100% - var(--dh) - var(--below) + var(--pad) / 2))); }
+  .view[hidden] { display:flex; visibility:hidden; pointer-events:none; }
+  .stage { display:flex; gap:calc(32px + var(--w) * 0.12); align-items:flex-start; justify-content:center; }
   .col { display:flex; flex-direction:column; align-items:center; width:var(--w); }
   .phone { position:relative; width:var(--w); height:var(--h); --r:calc(var(--pw, var(--w)) * 0.13); border-radius:var(--r); isolation:isolate;
            background:#fff; flex:none; }
   /* device frame: a 3px black bezel inside, a 2px metal rim outside; both sit outside the screen */
-  :root { --rim-bg:linear-gradient(135deg,#b4b7bd 0%,#7c8087 28%,#43464c 58%,#6a6d74 82%,#9a9da3 100%); --bezel-bg:#0a0a0b; --glow-o:.6; --rim-filter:none; --drop:24px 28px 40px -6px rgba(0,0,0,.30), 8px 10px 14px -2px rgba(0,0,0,.16); --rim-edge:0 0 0 0 transparent; }
+  :root { --rim-bg:linear-gradient(135deg,#b4b7bd 0%,#7c8087 28%,#43464c 58%,#6a6d74 82%,#9a9da3 100%); --bezel-bg:#0a0a0b; --glow-o:.6; --rim-filter:none; --drop:14px 18px 28px -8px rgba(0,0,0,.30), 5px 7px 10px -2px rgba(0,0,0,.16); --rim-edge:0 0 0 0 transparent; }
   /* silver frame (add ?frame=silver, or press S): a thin 2px black border inside a 2px white-silver band (both outside the screen), with a stronger glow */
   body[data-frame="silver"] { --rim-bg:linear-gradient(135deg,#ffffff 0%,#d4d7dc 30%,#9da1a8 58%,#cfd2d7 82%,#f5f6f8 100%); --bezel-bg:#0a0a0b; --glow-o:.8; }
   body[data-frame="silver"] .phone { --bz:2px; --rm:2px; }
@@ -72,28 +105,51 @@
   .phone.empty::before, .phone.empty::after { display:none; }
   .phone.empty { border:1.5px dashed #d0d3d8; display:flex; align-items:center; justify-content:center;
                  color:var(--muted); font-size:13px; }
-  .label { margin-top:0; font-size:18px; font-weight:600; min-height:24px; text-align:center; transition:opacity 250ms ease; }
+  .label { margin-top:0; font-family:var(--serif); font-size:23px; font-weight:500; letter-spacing:-.015em; min-height:24px; text-align:center; transition:opacity 250ms ease; }
   .label.out { opacity:0; }
   .note { margin-top:-12px; min-height:18px; font-size:14px; color:var(--muted); text-align:center; transition:opacity 250ms ease; }
   .note.out { opacity:0; }
-  .tag { margin-top:20px; font-size:14px; color:var(--muted); }
-  .eyebrow { position:fixed; top:32px; left:0; right:0; padding:0 16px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); text-align:center; }
-  .dots { display:flex; gap:6px; justify-content:center; }
+  .note:empty { display:none; }
+  .tag { margin-top:36px; font-size:13px; font-weight:400; color:var(--muted); text-align:center; }
+  /* pagination: a vertical column to the left of the device set, centred on the device frames */
+  .stagewrap { position:relative; }
+  .dots { position:absolute; left:-40px; top:calc(var(--h) / 2); transform:translateY(-50%); display:flex; flex-direction:column; gap:10px; }
   .dots i { width:6px; height:6px; border-radius:50%; background:#d0d3d8; transition:background 250ms; }
   .dots i.on { background:var(--ink); }
   @media (prefers-reduced-motion:reduce){ .phone img,.label,.note{ transition:none; } }
+  /* stacked (narrow) layout: normal flow instead of the desktop centring; equal space above and below the devices-and-labels group */
+  @media (max-width:960px) {
+    .right { gap:88px; padding-bottom:40px; align-items:center; transform:none; }                 /* 40px + the page padding = the 88px above the devices */
+    .views { position:static; flex:none; align-self:auto; display:grid; justify-items:center; }
+    .views > .view { position:static; grid-area:1 / 1; align-self:start; width:auto; max-width:none; }
+    .view[hidden] { display:none; }                           /* only the visible view sets the page height */
+  }
 </style>
 </head>
 <body>
-  <div class="eyebrow">Group Home Simplification</div>
+  <div class="layout">
+  <div class="copy">
+    <div class="copy-top">
+    <div class="eyebrow">Group Home Simplification</div>
+    <h1>Simplify without losing <em>context.</em></h1>
+    <p class="lede">Group Home had become crowded, making it harder for members to reach relevant community content.</p>
+    </div>
+    <div class="copy-bottom">
+    <p class="result">Part of a broader effort to help members reach relevant content faster.</p>
+    </div>
+  </div>
+  <div class="right">
   <div class="toggle" role="tablist" aria-label="Moment">
     <button role="tab" id="tab-top" aria-selected="true" data-view="top">Top of Home</button>
     <button role="tab" id="tab-featured" aria-selected="false" data-view="featured">Featured Unit</button>
   </div>
 
+  <div class="views">
   <section class="view" id="view-top">
-    <div class="stage" id="stage"></div>
-    <div class="dots" id="dots" aria-hidden="true"></div>
+    <div class="stagewrap">
+      <div class="dots" id="dots" aria-hidden="true"></div>
+      <div class="stage" id="stage"></div>
+    </div>
     <div class="label" id="label"></div>
     <div class="note" id="note"></div>
   </section>
@@ -117,11 +173,14 @@
       <button id="refresh" type="button">Refresh</button>
     </div>
   </section>
+  </div>
+  </div>
+  </div>
 
 <script>
   // Edit these lists to add, remove or reorder screens. Both columns step together by index.
   const COLUMNS = [
-    { tag: "Public · Non-Member", screens: [
+    { tag: "Public · Non-member", screens: [
       { src:"screens/before.png", label:"Before" },
       { src:"screens/v1.png",     label:"Variant 1 · Consistent header" },
       { src:"screens/v2.png",     label:"Variant 2 · Dynamic header height" },
@@ -189,6 +248,39 @@
     if (k === "s") setFrame(cur === "silver" ? "dark" : "silver");
     else if (k === "g") setFrame(cur === "glass" ? "dark" : "glass");
   });
+
+  // Equal distance: the space from the switcher to the top of the devices equals the space from the last label to the bottom of the page.
+  // Measured from the real layout (the label stacks differ by view and by window), so it is exact rather than estimated. Desktop layout only.
+  const placeViews = () => {
+    const views = [...document.querySelectorAll(".views > .view")], wrap = document.querySelector(".views");
+    if (matchMedia("(max-width: 960px)").matches) { views.forEach(v => v.style.top = ""); return; }
+    const toggleBottom = document.querySelector(".toggle").getBoundingClientRect().bottom, pageBottom = document.documentElement.clientHeight;
+    const wrapTop = wrap.getBoundingClientRect().top;
+    views.forEach(v => {
+      v.style.top = "0px";                                           // measure from a known position
+      const vTop = v.getBoundingClientRect().top, phone = v.querySelector(".phone").getBoundingClientRect();
+      const kids = [...v.children].filter(c => c.getBoundingClientRect().height > 0);
+      const bottom = Math.max(...kids.map(c => c.getBoundingClientRect().bottom));
+      const groupH = bottom - phone.top, phoneOffset = phone.top - vTop;
+      const devTop = Math.max(toggleBottom + 72, (toggleBottom + pageBottom - groupH) / 2);   // 72px minimum keeps the switcher clear of the glow
+      v.style.top = Math.round(devTop - wrapTop - phoneOffset) + "px";
+    });
+  };
+  // Equal margins: the right-most frame in Featured Unit (the widest view) sets the position. Its right margin equals the text's left margin,
+  // and the lockup stays at that one position in both views, so nothing moves when you switch tabs.
+  const placePush = () => {
+    const right = document.querySelector(".right");
+    right.style.setProperty("--push", "0px");                       // measure from the unshifted position
+    if (matchMedia("(max-width: 960px)").matches) return;
+    const margin = document.querySelector(".copy").getBoundingClientRect().left, edge = document.documentElement.clientWidth - margin;
+    const v = document.getElementById("view-featured"), edges = [...v.querySelectorAll(".phone")].map(e => e.getBoundingClientRect().right);
+    v.querySelectorAll(".cap, .sub").forEach(e => { const r = document.createRange(); r.selectNodeContents(e); edges.push(r.getBoundingClientRect().right); });
+    right.style.setProperty("--push", Math.max(0, Math.round(edge - Math.max(...edges))) + "px");
+  };
+  const placeAll = () => { placeViews(); placePush(); };
+  addEventListener("resize", placeAll);
+  document.fonts?.ready.then(placeAll);
+  addEventListener("load", placeAll);
 
   // Toggle between Moment 1 (Top of Home) and Moment 2 (Featured Unit)
   let view = "top";
